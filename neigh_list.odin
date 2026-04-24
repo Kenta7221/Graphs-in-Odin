@@ -1,0 +1,47 @@
+package main
+
+NeighList :: struct { lists: map[u32][dynamic]u32 }
+
+neigh_list_init :: proc(data: rawptr) -> NeighList {
+    return NeighList{lists = make(map[u32][dynamic]u32)}
+}
+
+neigh_list_destroy :: proc(data: rawptr) {
+    n := cast(^NeighList)data
+    delete(n.lists)
+}
+
+neigh_list_set_edge :: proc(i, j: u32, data: rawptr) {
+    l := cast(^NeighList)data
+    arr := l.lists[i]
+    append(&arr, j)
+    l.lists[i] = arr
+}
+
+neigh_list_get_edge :: proc(i, j: u32, data: rawptr) -> u8 {
+    n := cast(^NeighList)data
+    arr := n.lists[i]
+    
+    for edge in arr {
+        if edge == j do return 1
+    }
+
+    return 0
+}
+
+
+neigh_list_has_edge :: proc(i, j: u32, data: rawptr) -> bool {
+    n := cast(^NeighList)data
+    arr := n.lists[i]
+    
+    for edge in arr {
+        if edge == j do return true
+    }
+
+    return false
+}
+
+neigh_list_get_neighbour :: proc(node: u32, data: rawptr) -> [dynamic]u32 {
+    n := cast(^NeighList)data
+    return n.lists[node]
+}

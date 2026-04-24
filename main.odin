@@ -5,42 +5,24 @@ import "core:fmt"
 N :: 4
 S :: 100
 
+// Check for every implementation init, destroy and has_edge
+
 main :: proc() {
-    // Init
-    m : AdjMatrix
-    m.n = N
-    m.mat = make([][]u8, m.n)
-    for i in 0..<N do m.mat[i] = make([]u8, m.n)
-    generate_dag(N, S, mat_set_edge, &m)
-    defer {
-        for i in 0..<m.n do delete(m.mat[i]);
-        delete(m.mat)
+    m := mat_init(N)
+
+    ops := GraphOps{
+        data = &m,
+        set_edge = mat_set_edge,
+        get_edge = mat_get_edge,
+        has_edge = mat_has_edge,
+        get_neighbours = mat_get_neighbours,
+        destroy = mat_destroy
     }
 
-    n := NeighList{lists = make(map[u32][dynamic]u32)}
-    generate_dag(N, S, neigh_list_set_edge, &n)
-    defer delete(n.lists)
+    defer ops.destroy(ops.data)
 
-    e := EdgeList{edges = make([dynamic][2]u32)}
-    generate_dag(N, S, edge_list_set_edge, &e)
-    defer delete(e.edges)
-    
-    // Adjustment matrix print
-    dag_matrix_print(N, mat_get_edge, &m)
-    fmt.println()
+    generate_dag(N, S, ops.set_edge, ops.data)
+    dag_matrix_print(N, ops.get_edge, ops.data)
 
-    dag_matrix_print(N, neigh_list_get_edge, &n)
-    fmt.println()
-
-    dag_matrix_print(N, edge_list_get_edge, &e)
-    fmt.println()
-    
-    // Printing BFS
-    neighbours := bfs(0, N, neigh_list_get_neighbour, &n)
-    defer delete(neighbours)
-
-    dag_order_print(neighbours)
-
-
-    //Printing DFS   
+    fmt.println(ops.has_edge(0, 1, ops.data))
 }
