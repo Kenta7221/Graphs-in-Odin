@@ -1,5 +1,7 @@
 package main
 
+import "core:fmt"
+
 AdjMatrix :: struct { mat: [][]u8, n: uint }
 
 mat_init :: proc(n: u32) -> AdjMatrix {

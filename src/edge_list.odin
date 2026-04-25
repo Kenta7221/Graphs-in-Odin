@@ -2,7 +2,7 @@ package main
 
 EdgeList :: struct { edges: [dynamic][2]u32 }
 
-edge_list_init :: proc(n: u32) -> EdgeList {
+edge_list_init :: proc() -> EdgeList {
     return EdgeList{edges = make([dynamic][2]u32)}
 }
 
