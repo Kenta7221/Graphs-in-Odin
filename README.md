@@ -1,4 +1,4 @@
-## DAG implementation using C3
+## DAG implementation using Odin
 This is implementation of the most basic operations on DAG in [Odin programming language](https://odin-lang.org/)
 
 ## TODO

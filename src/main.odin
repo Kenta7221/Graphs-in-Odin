@@ -2,10 +2,8 @@ package main
 
 import "core:fmt"
 
-N :: 4
+N :: 10
 S :: 100
-
-// Check for every implementation init, destroy and has_edge
 
 main :: proc() {
     m := mat_init(N)
@@ -22,15 +20,18 @@ main :: proc() {
     }
 
     defer ops.destroy(ops.data)
-
+    
     dag_generate(N, S, ops.set_edge, ops.data)
 
+    // Most basic operations
     matrix_print(N, ops.get_edge, ops.data)
+    fmt.eprintln(ops.has_edge(0, 2, ops.data), ops.has_edge(1, 1, ops.data), ops.has_edge(100, 100, ops.data))
 
-    res := bfs(0, N, ops.get_neighbours, ops.data)
-    order_print(res)
-    fmt.println()
+    // Traversing through Graph
+    fmt.println(bfs(0, N, ops.get_neighbours, ops.data))
+    fmt.println(dfs(0, N, ops.get_neighbours, ops.data))
 
-    list := tarjan_sort(N, ops.get_neighbours, ops.data)
-    fmt.println(list)
+    // Topological sort
+    fmt.println(tarjan_sort(N, ops.get_neighbours, ops.data))
+    fmt.println(kahn_sort(N, ops.get_neighbours, ops.data))
 }

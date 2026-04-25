@@ -1,5 +1,8 @@
 package main
 
+import "core:fmt"
+import "core:os"
+
 EdgeList :: struct { edges: [dynamic][2]u32 }
 
 edge_list_init :: proc() -> EdgeList {
@@ -11,12 +14,22 @@ edge_list_destroy :: proc(data: rawptr) {
     delete(e.edges)
 }
 
-edge_list_set_edge :: proc(i, j: u32, data: rawptr) {
+edge_list_set_edge :: proc(i, j, n: u32, data: rawptr) {
+    if i > n || j > n {
+        fmt.println("Node is out of bounds")
+        os.exit(1)
+    }
+
     l := cast(^EdgeList)data
     append_elem(&l.edges, [2]u32{cast(u32)i, cast(u32)j})
 }
 
-edge_list_get_edge :: proc(i, j: u32, data: rawptr) -> u8 {
+edge_list_get_edge :: proc(i, j, n: u32, data: rawptr) -> u8 {
+    if i > n || j > n {
+        fmt.println("Node is out of bounds")
+        os.exit(1)
+    }
+
     l := cast(^EdgeList)data
     
     for pair in l.edges {

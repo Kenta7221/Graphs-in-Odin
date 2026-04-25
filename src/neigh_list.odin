@@ -1,6 +1,7 @@
 package main
 
 import "core:fmt"
+import "core:os"
 
 NeighList :: struct { lists: map[u32][dynamic]u32 }
 
@@ -17,16 +18,22 @@ neigh_list_destroy :: proc(data: rawptr) {
     delete(n.lists)
 }
 
-neigh_list_set_edge :: proc(i, j: u32, data: rawptr) {
+neigh_list_set_edge :: proc(i, j, n: u32, data: rawptr) {
     l := cast(^NeighList)data
     arr := l.lists[i]
     append(&arr, j)
     l.lists[i] = arr
 }
 
-neigh_list_get_edge :: proc(i, j: u32, data: rawptr) -> u8 {
-    n := cast(^NeighList)data
-    arr := n.lists[i]
+neigh_list_get_edge :: proc(i, j, n: u32, data: rawptr) -> u8 {
+    neight_list := cast(^NeighList)data
+
+    if i > n {
+        fmt.println("Node is out of bounds")
+        os.exit(1)
+    }
+
+    arr := neight_list.lists[i]
     
     for edge in arr {
         if edge == j do return 1
@@ -39,10 +46,7 @@ neigh_list_has_edge :: proc(i, j: u32, data: rawptr) -> bool {
     n := cast(^NeighList)data
     list, ok := &n.lists[i]
 
-    if(!ok) {
-        fmt.println("Node is out of range!")
-        return false;
-    }
+    if(!ok) do return false
     
     for edge in list {
         if edge == j do return true
@@ -64,3 +68,4 @@ neigh_list_get_neighbours :: proc(node: u32, data: rawptr) -> [dynamic]u32 {
     for v in list do append_elem(&result, v)
     return result
 }
+

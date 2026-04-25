@@ -1,8 +1,9 @@
 package main
 
 import "core:fmt"
+import "core:os"
 
-AdjMatrix :: struct { mat: [][]u8, n: uint }
+AdjMatrix :: struct { mat: [][]u8, n: u32 }
 
 mat_init :: proc(n: u32) -> AdjMatrix {
     m : AdjMatrix
@@ -20,23 +21,40 @@ mat_destroy :: proc(data: rawptr) {
     delete(m.mat)
 }
 
-mat_set_edge :: proc(i, j: u32, data: rawptr) {
+mat_set_edge :: proc(i, j, n: u32, data: rawptr) {
+    if i > n || j > n {
+        fmt.println("Node is out of bounds")
+        os.exit(1)
+    }
+
     m := cast(^AdjMatrix)data
     m.mat[i][j] = 1
 }
 
 mat_get_edge :: proc(i, j: u32, data: rawptr) -> u8 {
     m := cast(^AdjMatrix)data
+    if i > m.n || j > m.n {
+        fmt.println("Node is out of bounds")
+        os.exit(1)
+    }
+    
     return m.mat[i][j]
 }
 
 mat_has_edge :: proc(i, j: u32, data: rawptr) -> bool {
     m := cast(^AdjMatrix)data
+    if i > m.n || j > m.n do return false
+    
     return m.mat[i][j] == 1
 }
 
 mat_get_neighbours :: proc(node: u32, data: rawptr) -> [dynamic]u32 {
     m := cast(^AdjMatrix)data
+
+    if node > cast(u32)m.n {
+        fmt.println("Node is out of bounds")
+        os.exit(1)
+    }
 
     neighbour: [dynamic]u32
 
