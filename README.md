@@ -4,4 +4,5 @@ This is implementation of the most basic operations on DAG in [Odin programming 
 ## TODO
 - Bound checking for each node representation
 - Implement Kahn sort
-- Create test to check whether it actually works
+- Check each operation for each node representation if it actually works
+- Create tests
