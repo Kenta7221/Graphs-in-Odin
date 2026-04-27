@@ -2,7 +2,5 @@
 This is implementation of the most basic operations on DAG in [Odin programming language](https://odin-lang.org/)
 
 ## TODO
-- Fix Neighbour list leak problem
-- Check bfs and dfs by creating a binary tree and using it as graph
+- Finish benchmarks (new funtion for creating a graph so everyone would get the same one)
 - Implement "user interface"
-- Benchmarks
