@@ -1,4 +1,4 @@
-package main
+package graph
 
 import "core:fmt"
 import "core:os"
@@ -7,17 +7,15 @@ AdjMatrix :: struct { mat: [][]u8, n: u32 }
 
 mat_init :: proc(n: u32) -> AdjMatrix {
     m : AdjMatrix
-    m.n = N
-
+    m.n = n
     m.mat = make([][]u8, m.n)
-    for i in 0..<N do m.mat[i] = make([]u8, m.n)
-
+    for i in 0..<n do m.mat[i] = make([]u8, m.n)
     return m
 }
 
 mat_destroy :: proc(data: rawptr) {
     m := cast(^AdjMatrix)data
-    for i in 0..<m.n do delete(m.mat[i]);
+    for i in 0..<m.n do delete(m.mat[i])
     delete(m.mat)
 }
 
@@ -31,9 +29,9 @@ mat_set_edge :: proc(i, j, n: u32, data: rawptr) {
     m.mat[i][j] = 1
 }
 
-mat_get_edge :: proc(i, j: u32, data: rawptr) -> u8 {
+mat_get_edge :: proc(i, j, n: u32, data: rawptr) -> u8 {
     m := cast(^AdjMatrix)data
-    if i > m.n || j > m.n {
+    if i > n || j > n {
         fmt.println("Node is out of bounds")
         os.exit(1)
     }
@@ -41,11 +39,11 @@ mat_get_edge :: proc(i, j: u32, data: rawptr) -> u8 {
     return m.mat[i][j]
 }
 
-mat_has_edge :: proc(i, j: u32, data: rawptr) -> bool {
-    m := cast(^AdjMatrix)data
-    if i > m.n || j > m.n do return false
+mat_has_edge :: proc(node, needle: u32, haystack: rawptr) -> bool {
+    m := cast(^AdjMatrix)haystack
+    if node > m.n || needle > m.n do return false
     
-    return m.mat[i][j] == 1
+    return m.mat[node][needle] == 1
 }
 
 mat_get_neighbours :: proc(node: u32, data: rawptr) -> [dynamic]u32 {

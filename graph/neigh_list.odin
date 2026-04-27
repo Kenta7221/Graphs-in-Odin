@@ -1,4 +1,4 @@
-package main
+package graph
 
 import "core:fmt"
 import "core:os"
@@ -20,9 +20,8 @@ neigh_list_destroy :: proc(data: rawptr) {
 
 neigh_list_set_edge :: proc(i, j, n: u32, data: rawptr) {
     l := cast(^NeighList)data
-    arr := l.lists[i]
-    append(&arr, j)
-    l.lists[i] = arr
+    arr := &l.lists[i]
+    append(arr, j)
 }
 
 neigh_list_get_edge :: proc(i, j, n: u32, data: rawptr) -> u8 {
@@ -42,14 +41,14 @@ neigh_list_get_edge :: proc(i, j, n: u32, data: rawptr) -> u8 {
     return 0
 }
 
-neigh_list_has_edge :: proc(i, j: u32, data: rawptr) -> bool {
-    n := cast(^NeighList)data
-    list, ok := &n.lists[i]
+neigh_list_has_edge :: proc(node, needle: u32, haystack: rawptr) -> bool {
+    n := cast(^NeighList)haystack
+    list, ok := &n.lists[node]
 
     if(!ok) do return false
     
     for edge in list {
-        if edge == j do return true
+        if edge == needle do return true
     }
 
     return false

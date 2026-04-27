@@ -1,23 +1,26 @@
-package main
+package graph
 
 import "core:fmt"
 import "core:math"
 import "core:slice"
 import "core:math/rand"
 
-Frame :: struct { 
-    node      : u32,
-    nb_idx    : int 
-}
-
 GraphOps :: struct {
     data          : rawptr,
     set_edge      : proc(i, j, n: u32, data: rawptr),
     get_edge      : proc(i, j, n: u32, data: rawptr) -> u8,
-    has_edge      : proc(i, j: u32, data: rawptr) -> bool,
-    get_neighbours: proc(i: u32, data: rawptr) -> [dynamic]u32,
-    destroy       : proc(data: rawptr),
+    has_edge      : proc(needle, val: u32, haystack: rawptr) -> bool,
+    get_neighbours: proc(node: u32, data: rawptr) -> [dynamic]u32,
+    destroy       : proc(data: rawptr)
 }
+
+GraphRep :: enum {Matrix, Neighbour, Edge}
+
+Frame :: struct { 
+    node      : u32,
+    nb_idx    : int,
+}
+
 
 dag_generate :: proc(n : u32, s : u32, set_edge: proc(i, j, n: u32, data: rawptr), data: rawptr) {
     e_max : u32 = n * (n-1) / 2
@@ -38,7 +41,7 @@ dag_generate :: proc(n : u32, s : u32, set_edge: proc(i, j, n: u32, data: rawptr
 
     slice.sort_by(edges[:e_target], edge_less)
    
-    for i in 0..<e_target do set_edge(edges[i][0], edges[i][1], n,  data)
+    for i in 0..<e_target do set_edge(edges[i][0], edges[i][1], n, data)
 }
 
 @(private="file")
@@ -47,14 +50,16 @@ edge_less :: proc(a, b: [2]u32) -> bool {
     return a[1] < b[1]
 }
 
-
-kahn_sort :: proc(n: u32, get_neighbours: proc(node: u32, data: rawptr) -> [dynamic]u32, data: rawptr) -> [dynamic]u32 {
+kahn_sort :: proc(n: u32,
+                  get_neighbours: proc(node: u32, data: rawptr) -> [dynamic]u32,
+                  data: rawptr) -> [dynamic]u32 {
     in_degree := make([]u32, n)
     defer delete(in_degree)
 
     for i in 0..<n {
         neighbours := get_neighbours(i, data)
         for nb in neighbours do in_degree[nb] += 1
+        delete(neighbours)
     }
 
     queue : [dynamic]u32
@@ -81,7 +86,10 @@ kahn_sort :: proc(n: u32, get_neighbours: proc(node: u32, data: rawptr) -> [dyna
     return result
 }
 
-tarjan_sort :: proc(n: u32, get_neighbours: proc(node: u32, data: rawptr) -> [dynamic]u32, data: rawptr) -> [dynamic]u32 {
+tarjan_sort :: proc(n: u32,
+                    get_neighbours: proc(node: u32, data: rawptr) -> [dynamic]u32,
+                    data: rawptr) -> [dynamic]u32 {
+
     marked := make([]bool, n)
     defer delete(marked)
 

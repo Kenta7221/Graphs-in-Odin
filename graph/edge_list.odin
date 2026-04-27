@@ -1,4 +1,4 @@
-package main
+package graph
 
 import "core:fmt"
 import "core:os"
@@ -39,11 +39,11 @@ edge_list_get_edge :: proc(i, j, n: u32, data: rawptr) -> u8 {
     return 0
 }
 
-edge_list_has_edge :: proc(i, j: u32, data: rawptr) -> bool {
-    l := cast(^EdgeList)data
+edge_list_has_edge :: proc(node, needle: u32, haystack: rawptr) -> bool {
+    l := cast(^EdgeList)haystack
     
     for pair in l.edges {
-        if pair[0] == i && pair[1] == j do return true
+        if pair[0] == node && pair[1] == needle do return true
     }
 
     return false

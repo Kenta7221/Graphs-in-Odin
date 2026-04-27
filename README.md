@@ -2,6 +2,7 @@
 This is implementation of the most basic operations on DAG in [Odin programming language](https://odin-lang.org/)
 
 ## TODO
-- Check each operation for each node representation if it actually works
+- Fix Neighbour list leak problem
+- Check bfs and dfs by creating a binary tree and using it as graph
 - Implement "user interface"
-- Create tests
+- Benchmarks
