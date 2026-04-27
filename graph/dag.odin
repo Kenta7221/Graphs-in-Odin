@@ -21,7 +21,6 @@ Frame :: struct {
     nb_idx    : int,
 }
 
-
 dag_generate :: proc(n : u32, s : u32, set_edge: proc(i, j, n: u32, data: rawptr), data: rawptr) {
     e_max : u32 = n * (n-1) / 2
     e_target : u32 = cast(u32)math.floor(cast(f32)(s) / 100.0 * cast(f32)e_max)
@@ -86,43 +85,43 @@ kahn_sort :: proc(n: u32,
     return result
 }
 
-tarjan_sort :: proc(n: u32,
-                    get_neighbours: proc(node: u32, data: rawptr) -> [dynamic]u32,
-                    data: rawptr) -> [dynamic]u32 {
+tarjan_sort :: proc(n: u32, get_neighbours: proc(node: u32, data: rawptr) -> [dynamic]u32, data: rawptr) -> [dynamic]u32 {
 
     marked := make([]bool, n)
     defer delete(marked)
 
     stack: [dynamic]Frame
-    delete(stack)
-    
-    append_elem(&stack, Frame{0, 0})
+    defer delete(stack)
     
     result: [dynamic]u32
 
-    for len(stack) > 0 {
-        frame := &stack[len(stack) - 1]
+    for i in 0..<n {
+        if marked[i] do continue
+        marked[i] = true
+        append_elem(&stack, Frame{i, 0})
 
-        found := false
-        neighbours := get_neighbours(frame.node, data)
+        for len(stack) > 0 {
+            frame := &stack[len(stack)-1]
+            found := false
+            neighbours := get_neighbours(frame.node, data)
 
-        for frame.nb_idx < len(neighbours) {
-            nb := neighbours[frame.nb_idx]
-            frame.nb_idx += 1
-            if !marked[nb] {
-                marked[nb] = true
-                append_elem(&stack, Frame{nb, 0})
-                found = true
-                break
+            for frame.nb_idx < len(neighbours) {
+                nb := neighbours[frame.nb_idx]
+                frame.nb_idx += 1
+                if !marked[nb] {
+                    marked[nb] = true
+                    append_elem(&stack, Frame{nb, 0})
+                    found = true
+                    break
+                }
             }
-        }
+            if !found {
+                append_elem(&result, frame.node)
+                pop(&stack)
+            }
 
-        if !found {
-            append_elem(&result, frame.node)
-            pop(&stack)
+            delete(neighbours)
         }
-
-        delete(neighbours)
     }
 
     slice.reverse(result[:])
