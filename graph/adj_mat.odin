@@ -5,11 +5,33 @@ import "core:os"
 
 AdjMatrix :: struct { mat: [][]u8, n: u32 }
 
-mat_init :: proc(n: u32) -> AdjMatrix {
+mat_init :: proc(n, e_target: u32, edges: [][2]u32) -> AdjMatrix {
     m : AdjMatrix
     m.n = n
     m.mat = make([][]u8, m.n)
     for i in 0..<n do m.mat[i] = make([]u8, m.n)
+
+    for i in 0..<e_target {
+        x := edges[i][0]
+        y := edges[i][1]
+
+        if x > n || y > n {
+            fmt.println("Node is out of bounds")
+            os.exit(1)
+        }
+
+        m.mat[x][y] = 1
+    }
+
+    return m
+}
+
+mat_zero_init :: proc (n: u32)  -> AdjMatrix {
+    m : AdjMatrix
+    m.n = n
+    m.mat = make([][]u8, m.n)
+    for i in 0..<n do m.mat[i] = make([]u8, m.n)
+
     return m
 }
 

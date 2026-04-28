@@ -5,13 +5,39 @@ import "core:os"
 
 NeighList :: struct { lists: map[u32]^[dynamic]u32 }
 
-neigh_list_init :: proc(n: u32) -> NeighList {
+neigh_list_init :: proc(n, e_target: u32, edges: [][2]u32) -> NeighList {
     lists := make(map[u32]^[dynamic]u32)
     for i in 0..<n {
         arr := new([dynamic]u32)
         arr^ = make([dynamic]u32)
         lists[i] = arr
     }
+    
+
+    for i in 0..<e_target {
+        x := edges[i][0]
+        y := edges[i][1]
+
+        if x > n || y > n {
+            fmt.println("Node is out of bounds")
+            os.exit(1)
+        }
+
+        arr := lists[x]
+        append_elem(arr, y)
+    }
+
+    return NeighList{lists = lists}
+}
+
+neigh_list_zero_init :: proc(n: u32) -> NeighList {
+    lists := make(map[u32]^[dynamic]u32)
+    for i in 0..<n {
+        arr := new([dynamic]u32)
+        arr^ = make([dynamic]u32)
+        lists[i] = arr
+    }
+
     return NeighList{lists = lists}
 }
 

@@ -5,8 +5,27 @@ import "core:os"
 
 EdgeList :: struct { edges: [dynamic][2]u32 }
 
-edge_list_init :: proc() -> EdgeList {
-    return EdgeList{edges = make([dynamic][2]u32)}
+edge_list_init :: proc(n, e_target: u32, edges: [][2]u32) -> EdgeList {
+    e := make([dynamic][2]u32)
+
+    for i in 0..<e_target {
+        x := edges[i][0]
+        y := edges[i][1]
+
+        if x > n || y > n {
+            fmt.println("Node is out of bounds")
+            os.exit(1)
+        }
+
+        append_elem(&e, [2]u32{x, y})
+    }
+
+    return EdgeList{edges = e}
+}
+
+edge_list_zero_init :: proc() -> EdgeList {
+    e := make([dynamic][2]u32)
+    return EdgeList{edges = e}
 }
 
 edge_list_destroy :: proc(data: rawptr) {

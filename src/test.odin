@@ -19,12 +19,14 @@ topological_sort :: proc(t: ^testing.T) {
         n := rand.uint32_range(1, MAX_NODE)
         s := rand.uint32_range(MIN_SATURATION, 100 + 1)
 
+        edges, e_target := g.dag_generate_edges(n, s)
+
         for rep in g.GraphRep {
             ops: g.GraphOps
             
             #partial switch rep {
                 case g.GraphRep.Matrix:
-                m := g.mat_init(n)
+                m := g.mat_init(n, e_target, edges)
                 ops = g.GraphOps{
                     data = &m,
                     set_edge       = g.mat_set_edge,
@@ -34,7 +36,7 @@ topological_sort :: proc(t: ^testing.T) {
                     destroy        = g.mat_destroy
                 }
                 case g.GraphRep.Neighbour:
-                nl := g.neigh_list_init(n)
+                nl := g.neigh_list_init(n, e_target, edges)
                 ops = g.GraphOps{
                     data = &nl,
                     set_edge = g.neigh_list_set_edge,
@@ -44,7 +46,7 @@ topological_sort :: proc(t: ^testing.T) {
                     destroy = g.neigh_list_destroy
                 }
                 case g.GraphRep.Edge:
-                el := g.edge_list_init()
+                el := g.edge_list_init(n, e_target, edges)
                 ops = g.GraphOps{
                     data = &el,
                     set_edge = g.edge_list_set_edge,
@@ -53,10 +55,7 @@ topological_sort :: proc(t: ^testing.T) {
                     get_neighbours = g.edge_list_get_neighbours,
                     destroy = g.edge_list_destroy
                 }
-            }
-
-            g.dag_generate(n, s, ops.set_edge, ops.data)
-            
+            }            
             is_correct: bool
 
             kahn_list := g.kahn_sort(n, ops.get_neighbours, ops.data)
@@ -66,7 +65,7 @@ topological_sort :: proc(t: ^testing.T) {
                 g.matrix_print(n, ops.get_edge, ops.data)
                 fmt.println(n)
                 fmt.println(kahn_list)
-                testing.fail_now(t)
+                testing.fail(t)
             }
 
             delete(kahn_list)
@@ -76,7 +75,7 @@ topological_sort :: proc(t: ^testing.T) {
             if !is_correct {
                 log.infof("Tarjan sort failed %d, %d", n, kahn_list)
                 debug_matrix_print(n, ops.get_edge, ops.data)
-                testing.fail_now(t)
+                testing.fail(t)
             }
             delete(tarjan_list)
 
@@ -90,9 +89,9 @@ graph_traversing :: proc(t: ^testing.T) {
     for i in 0..<ITERATION {
         n := rand.uint32_range(1, MAX_NODE)
         
-        m := g.mat_init(n)
-        nl := g.neigh_list_init(n)
-        el := g.edge_list_init()
+        m := g.mat_zero_init(n)
+        nl := g.neigh_list_zero_init(n)
+        el := g.edge_list_zero_init()
 
         tree := bt.bt_init(n)
 
@@ -142,7 +141,7 @@ graph_traversing :: proc(t: ^testing.T) {
             if !is_correct {
                 log.infof("BFS failed expected: %d got: %d.", bt_dfs, dag_dfs)
                 debug_matrix_print(n, ops.get_edge, ops.data)
-                testing.fail_now(t)
+                testing.fail(t)
             }
 
             delete(bt_dfs)
@@ -154,7 +153,7 @@ graph_traversing :: proc(t: ^testing.T) {
             if !is_correct {
                 log.infof("BFS failed expected: %d got: %d.", bt_bfs, dag_bfs)
                 debug_matrix_print(n, ops.get_edge, ops.data)
-                testing.fail_now(t)
+                testing.fail(t)
             }
             
             delete(bt_bfs)

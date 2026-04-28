@@ -21,12 +21,11 @@ Frame :: struct {
     nb_idx    : int,
 }
 
-dag_generate :: proc(n : u32, s : u32, set_edge: proc(i, j, n: u32, data: rawptr), data: rawptr) {
+dag_generate_edges :: proc(n : u32, s : u32) -> ([][2]u32, u32) {
     e_max : u32 = n * (n-1) / 2
     e_target : u32 = cast(u32)math.floor(cast(f32)(s) / 100.0 * cast(f32)e_max)
 
     edges := make([][2]u32, e_max);
-    defer delete(edges)
     
     idx : u32 = 0
     for i in 0..<n {
@@ -38,9 +37,7 @@ dag_generate :: proc(n : u32, s : u32, set_edge: proc(i, j, n: u32, data: rawptr
 
     rand.shuffle(edges)
 
-    slice.sort_by(edges[:e_target], edge_less)
-   
-    for i in 0..<e_target do set_edge(edges[i][0], edges[i][1], n, data)
+    return edges, e_target
 }
 
 @(private="file")

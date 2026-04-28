@@ -6,98 +6,129 @@ import "core:fmt"
 import "core:os"
 import "core:time"
 
-import "../graph"
+import g "../graph"
 
-Benchmark :: enum {HAS_EDGE, KAHN_SORT, TARJAN_SORT}
+Benchmark :: enum {Has_Edge, Kahn_Sort, Tarjan_Sort}
 
+MIN_SATURATION :: 20
+MAX_SATURATION :: 80 + 1
 TEST_SIZE :: 5
 
 main :: proc() {
-    nodes_size := [TEST_SIZE]u32{100_000, 250_000, 500_000, 750_000, 1_000_000}
+    nodes_size := [TEST_SIZE]u32{1_000, 2_500, 5_000, 7_500, 10_000}
     graph_time: [TEST_SIZE][3]f64
-
-    for bench, idx in Benchmark {
-        for n in nodes_size[idx] {
-            n := rand.uint32_range(1, MAX_NODE)
-            s := rand.uint32_range(MIN_SATURATION, 100 + 1)
-
-            
-        }
-    }
-
-    write_csv(69, .HAS_EDGE)
-
     stopwatch: time.Stopwatch
 
-    time.stopwatch_start(&stopwatch)
-    time.stopwatch_stop(&stopwatch)
-    fmt.println(time.stopwatch_duration(stopwatch))
+    for bench in Benchmark {
+        fmt.printf("[%v]\n", bench)
+        for n, node_idx in nodes_size {
+            s := rand.uint32_range(MIN_SATURATION, MAX_SATURATION)
 
-    
+            edges, e_target := g.dag_generate_edges(n, s)
 
-    // for i in 0..<ITERATION {
-    //     n := rand.uint32_range(1, MAX_NODE)
-    //     s := rand.uint32_range(MIN_SATURATION, 100 + 1)
+            fmt.println("├──" if n != nodes_size[TEST_SIZE - 1] else "└──", n)
 
-    //     for rep in g.GraphRep {
-    //         ops: g.GraphOps
-            
-    //         #partial switch rep {
-    //             case g.GraphRep.Matrix:
-    //             m := g.mat_init(n)
-    //             ops = g.GraphOps{
-    //                 data = &m,
-    //                 set_edge       = g.mat_set_edge,
-    //                 get_edge       = g.mat_get_edge,
-    //                 has_edge       = g.mat_has_edge,
-    //                 get_neighbours = g.mat_get_neighbours,
-    //                 destroy        = g.mat_destroy
-    //             }
-    //             case g.GraphRep.Neighbour:
-    //             nl := g.neigh_list_init(n)
-    //             ops = g.GraphOps{
-    //                 data = &nl,
-    //                 set_edge = g.neigh_list_set_edge,
-    //                 get_edge = g.neigh_list_get_edge,
-    //                 has_edge = g.neigh_list_has_edge,
-    //                 get_neighbours = g.neigh_list_get_neighbours,
-    //                 destroy = g.neigh_list_destroy
-    //             }
-    //             case g.GraphRep.Edge:
-    //             el := g.edge_list_init()
-    //             ops = g.GraphOps{
-    //                 data = &el,
-    //                 set_edge = g.edge_list_set_edge,
-    //                 get_edge = g.edge_list_get_edge,
-    //                 has_edge = g.edge_list_has_edge,
-    //                 get_neighbours = g.edge_list_get_neighbours,
-    //                 destroy = g.edge_list_destroy
-    //             }
-    //         }
+            for rep, rep_idx in g.GraphRep {
+                ops: g.GraphOps
+                
+                prefix := "│" if n != nodes_size[TEST_SIZE - 1] else " "
+                fmt.println(prefix, "   ├──" if rep != g.GraphRep.Edge else "   └──", rep)
 
-    //         g.dag_generate(n, s, ops.set_edge, ops.data)
-            
+                #partial switch rep {
+                    case g.GraphRep.Matrix:
+                    m := g.mat_init(n, e_target, edges)
+                    ops = g.GraphOps{
+                        data = &m,
+                        get_edge       = g.mat_get_edge,
+                        set_edge       = g.mat_set_edge,
+                        has_edge       = g.mat_has_edge,
+                        get_neighbours = g.mat_get_neighbours,
+                        destroy        = g.mat_destroy
+                    }
+                    case g.GraphRep.Neighbour:
+                    nl := g.neigh_list_init(n, e_target, edges)
+                    ops = g.GraphOps{
+                        data = &nl,
+                        get_edge = g.neigh_list_get_edge,
+                        set_edge = g.neigh_list_set_edge,
+                        has_edge = g.neigh_list_has_edge,
+                        get_neighbours = g.neigh_list_get_neighbours,
+                        destroy = g.neigh_list_destroy
+                    }
+                    case g.GraphRep.Edge:
+                    el := g.edge_list_init(n, e_target, edges)
+                    ops = g.GraphOps{
+                        data = &el,
+                        get_edge = g.edge_list_get_edge,
+                        set_edge = g.edge_list_set_edge,
+                        has_edge = g.edge_list_has_edge,
+                        get_neighbours = g.edge_list_get_neighbours,
+                        destroy = g.edge_list_destroy
+                    }
+                }
 
-    //         //kahn_list := g.kahn_sort(n, ops.get_neighbours, ops.data)
-    //         //delete(kahn_list)
- 
+                #partial switch bench {
+                    case .Has_Edge:
+                    start := rand.uint32_range(1, n)
+                    end := rand.uint32_range(1, n)
 
-    //         tarjan_list := g.tarjan_sort(n, ops.get_neighbours, ops.data)
-    //         delete(tarjan_list)
+                    time.stopwatch_reset(&stopwatch)
+                    time.stopwatch_start(&stopwatch)
 
-    //         ops.destroy(ops.data)
-    //     }
-    // }
+                    ops.has_edge(end, start, ops.data)
+
+                    time.stopwatch_stop(&stopwatch)
+
+                    duration := time.stopwatch_duration(stopwatch)
+                    graph_time[node_idx][rep_idx] = time.duration_microseconds(duration)
+
+                    case .Kahn_Sort:
+                    time.stopwatch_reset(&stopwatch)
+                    time.stopwatch_start(&stopwatch)
+
+                    kahn_list := g.kahn_sort(n, ops.get_neighbours, ops.data)
+                    delete(kahn_list)
+
+                    time.stopwatch_stop(&stopwatch)
+
+                    duration := time.stopwatch_duration(stopwatch)
+                    graph_time[node_idx][rep_idx] = time.duration_seconds(duration)
+
+                    case .Tarjan_Sort:
+                    time.stopwatch_reset(&stopwatch)
+                    time.stopwatch_start(&stopwatch)
+
+                    tarjan_list := g.tarjan_sort(n, ops.get_neighbours, ops.data)
+                    delete(tarjan_list)
+
+                    time.stopwatch_stop(&stopwatch)
+                    
+                    duration := time.stopwatch_duration(stopwatch)
+                    graph_time[node_idx][rep_idx] = time.duration_seconds(duration)
+                }
+                ops.destroy(ops.data)
+            }
+            delete(edges)
+        }
+        write_csv(bench, nodes_size, graph_time)
+        fmt.println()
+    }
 }
 
-write_csv :: proc(n: u32, bench: Benchmark) {
+@(private="file")
+write_csv :: proc(bench: Benchmark, nodes_size: [TEST_SIZE]u32, graph_time: [TEST_SIZE][3]f64) {
     sb: strings.Builder
     strings.builder_init(&sb)
     defer strings.builder_destroy(&sb)
 
-    strings.write_string(&sb, fmt.tprintf("%d;Adjacency Matrix;Neighbour List;Edge List\n", n))
-
-    
+    strings.write_string(&sb, "n;Adjacency Matrix;Neighbour List;Edge List\n")
+    for i in 0..<TEST_SIZE {
+        strings.write_string(&sb, fmt.tprintf("%d", nodes_size[i]))
+        for j in 0..<3 {
+            strings.write_string(&sb, fmt.tprintf(";%.3f", graph_time[i][j]))
+        }
+        strings.write_string(&sb, "\n")
+    }
     
     filename := fmt.tprintf("bin/%v.csv", bench)
     filename = strings.to_lower(filename)
