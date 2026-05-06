@@ -3,14 +3,14 @@ This is implementation of the most basic operations on DAG in [Odin programming 
 
 ## Compiling programs
 # User interface
-'''bash
+```bash
 odin build src/main.odin -file
-'''
+```
 # Tests
-'''bash
+```bash
 odin build src/test.odin -file
-'''
+```
 # Benchmarks
-'''bash
+```bash
 odin build src/benchmark.odin -file
-'''
+```
