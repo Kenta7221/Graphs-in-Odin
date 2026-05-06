@@ -209,9 +209,6 @@ matrix_print :: proc(n: u32, get_edge: proc(i, j, n: u32, data: rawptr) -> u8, d
 	if n == 0 {return}
 	fmt.print("  | ")
 
-	//spaces := "  | "
-	//fmt.print(spaces, sep = "")
-
 	for i in 0 ..< n {
 		fmt.print(i, " ", sep = "")
 	}

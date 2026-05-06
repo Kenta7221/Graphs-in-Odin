@@ -10,9 +10,10 @@ import "core:strings"
 import g "../graph"
 
 User :: struct {
-	ops: g.GraphOps,
-	n:   u32,
-	s:   u32,
+	ops:  g.GraphOps,
+	type: g.GraphRep,
+	n:    u32,
+	s:    u32,
 }
 
 main :: proc() {
@@ -22,8 +23,7 @@ main :: proc() {
 		delete(edges)
 	}
 
-	rep := cast(g.GraphRep)rand.uint32_range(0, len(g.GraphRep))
-	#partial switch rep {
+	#partial switch user.type {
 	case g.GraphRep.Matrix:
 		m := g.mat_init(user.n, e_target, edges)
 		user.ops = g.GraphOps {
@@ -56,7 +56,59 @@ main :: proc() {
 		}
 	}
 
-	g.matrix_print(user.n, user.ops.get_edge, user.ops.data)
+
+	quit := false
+	for !quit {
+		fmt.print("action> ")
+		cmd := read_line()
+
+		switch cmd {
+		case "print":
+			g.matrix_print(user.n, user.ops.get_edge, user.ops.data)
+		case "find":
+			fmt.print("from> ")
+			arg1_str := read_line()
+			defer delete(arg1_str)
+
+			fmt.print("to> ")
+			arg2_str := read_line()
+			defer delete(arg2_str)
+
+			arg1, _ := strconv.parse_uint(arg1_str)
+			arg2, _ := strconv.parse_uint(arg2_str)
+
+			found := user.ops.has_edge(cast(u32)arg1, cast(u32)arg2, user.ops.data)
+			fmt.printfln(
+				"%s: edge (%d, %d) %s in Graph!",
+				"True" if found else "False",
+				arg1,
+				arg2,
+				"exists" if found else "does not exist",
+			)
+		case "dfs":
+			path := g.dfs(0, user.n, user.ops.get_neighbours, user.ops.data)
+			defer delete(path)
+			fmt.println(path[:])
+		case "bfs":
+			path := g.bfs(0, user.n, user.ops.get_neighbours, user.ops.data)
+			defer delete(path)
+			fmt.println(path[:])
+		case "kahn-sort":
+			path := g.kahn_sort(user.n, user.ops.get_neighbours, user.ops.data)
+			defer delete(path)
+			fmt.println(path[:])
+		case "tarjan-sort":
+			path := g.tarjan_sort(user.n, user.ops.get_neighbours, user.ops.data)
+			defer delete(path)
+			fmt.println(path[:])
+		case "exit":
+			quit = true
+		case:
+			fmt.println("Unknown command")
+		}
+
+		delete(cmd)
+	}
 }
 
 @(private = "file")
@@ -74,13 +126,29 @@ handle_user_flag :: proc() -> (User, [][2]u32, u32) {
 	}
 
 	if os.args[1] == "--generate" {
-		fmt.print("Nodes> ")
+		fmt.print("type> ")
+		type_str := read_line()
+		defer delete(type_str)
+
+		fmt.print("nodes> ")
 		n_str := read_line()
 		defer delete(n_str)
 
-		fmt.print("Saturation> ")
+		fmt.print("saturation> ")
 		s_str := read_line()
 		defer delete(s_str)
+
+		switch type_str {
+		case "matrix":
+			user.type = g.GraphRep.Matrix
+		case "list":
+			user.type = g.GraphRep.Edge
+		case "table":
+			user.type = g.GraphRep.Neighbour
+		case:
+			fmt.eprintln("Unknown graph representation")
+			os.exit(1)
+		}
 
 		tmp: uint
 		tmp, _ = strconv.parse_uint(n_str)
@@ -94,6 +162,10 @@ handle_user_flag :: proc() -> (User, [][2]u32, u32) {
 		return user, edges, e_target
 	}
 
+	fmt.print("type> ")
+	type_str := read_line()
+	defer delete(type_str)
+
 	fmt.print("Nodes> ")
 	n_str := read_line()
 	defer delete(n_str)
@@ -101,6 +173,18 @@ handle_user_flag :: proc() -> (User, [][2]u32, u32) {
 	tmp: uint
 	tmp, _ = strconv.parse_uint(n_str)
 	user.n = cast(u32)tmp
+
+	switch type_str {
+	case "matrix":
+		user.type = g.GraphRep.Matrix
+	case "list":
+		user.type = g.GraphRep.Edge
+	case "table":
+		user.type = g.GraphRep.Neighbour
+	case:
+		fmt.eprintln("Unknown graph representation")
+		os.exit(1)
+	}
 
 	e_target: u32 = 0
 	edges := make([dynamic][2]u32)
@@ -110,7 +194,7 @@ handle_user_flag :: proc() -> (User, [][2]u32, u32) {
 		line := read_line()
 		defer delete(line)
 
-		if len(line) == 0 do break
+		if len(line) == 0 do continue
 
 		parts := strings.split(line, " ")
 		defer delete(parts)
