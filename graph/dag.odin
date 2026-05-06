@@ -2,221 +2,241 @@ package graph
 
 import "core:fmt"
 import "core:math"
-import "core:slice"
 import "core:math/rand"
+import "core:slice"
 
 GraphOps :: struct {
-    data          : rawptr,
-    set_edge      : proc(i, j, n: u32, data: rawptr),
-    get_edge      : proc(i, j, n: u32, data: rawptr) -> u8,
-    has_edge      : proc(needle, val: u32, haystack: rawptr) -> bool,
-    get_neighbours: proc(node: u32, data: rawptr) -> [dynamic]u32,
-    destroy       : proc(data: rawptr)
+	data:           rawptr,
+	set_edge:       proc(i, j, n: u32, data: rawptr),
+	get_edge:       proc(i, j, n: u32, data: rawptr) -> u8,
+	has_edge:       proc(needle, val: u32, haystack: rawptr) -> bool,
+	get_neighbours: proc(node: u32, data: rawptr) -> [dynamic]u32,
+	destroy:        proc(data: rawptr),
 }
 
-GraphRep :: enum {Matrix, Neighbour, Edge}
-
-Frame :: struct { 
-    node      : u32,
-    nb_idx    : int,
+GraphRep :: enum {
+	Matrix,
+	Neighbour,
+	Edge,
 }
 
-dag_generate_edges :: proc(n : u32, s : u32) -> ([][2]u32, u32) {
-    e_max : u32 = n * (n-1) / 2
-    e_target : u32 = cast(u32)math.floor(cast(f32)(s) / 100.0 * cast(f32)e_max)
-
-    edges := make([][2]u32, e_max);
-    
-    idx : u32 = 0
-    for i in 0..<n {
-	    for j in i+1..<n {
-	        edges[idx] = [2]u32{i, j}
-	        idx += 1
-	    }
-    }
-
-    rand.shuffle(edges)
-
-    return edges, e_target
+Frame :: struct {
+	node:   u32,
+	nb_idx: int,
 }
 
-@(private="file")
+dag_generate_edges :: proc(n: u32, s: u32) -> ([][2]u32, u32) {
+	e_max: u32 = n * (n - 1) / 2
+	e_target: u32 = cast(u32)math.floor(cast(f32)(s) / 100.0 * cast(f32)e_max)
+
+	edges := make([][2]u32, e_max)
+
+	idx: u32 = 0
+	for i in 0 ..< n {
+		for j in i + 1 ..< n {
+			edges[idx] = [2]u32{i, j}
+			idx += 1
+		}
+	}
+
+	rand.shuffle(edges)
+
+	return edges, e_target
+}
+
+@(private = "file")
 edge_less :: proc(a, b: [2]u32) -> bool {
-    if a[0] != b[0] do return a[0] < b[0]
-    return a[1] < b[1]
+	if a[0] != b[0] do return a[0] < b[0]
+	return a[1] < b[1]
 }
 
-kahn_sort :: proc(n: u32,
-                  get_neighbours: proc(node: u32, data: rawptr) -> [dynamic]u32,
-                  data: rawptr) -> [dynamic]u32 {
-    in_degree := make([]u32, n)
-    defer delete(in_degree)
+kahn_sort :: proc(
+	n: u32,
+	get_neighbours: proc(node: u32, data: rawptr) -> [dynamic]u32,
+	data: rawptr,
+) -> [dynamic]u32 {
+	in_degree := make([]u32, n)
+	defer delete(in_degree)
 
-    for i in 0..<n {
-        neighbours := get_neighbours(i, data)
-        for nb in neighbours do in_degree[nb] += 1
-        delete(neighbours)
-    }
+	for i in 0 ..< n {
+		neighbours := get_neighbours(i, data)
+		for nb in neighbours do in_degree[nb] += 1
+		delete(neighbours)
+	}
 
-    queue : [dynamic]u32
-    defer delete(queue)
+	queue: [dynamic]u32
+	defer delete(queue)
 
-    for i in 0..<len(in_degree) {
-        if in_degree[i] == 0 do append_elem(&queue, cast(u32)i)
-    }
+	for i in 0 ..< len(in_degree) {
+		if in_degree[i] == 0 do append_elem(&queue, cast(u32)i)
+	}
 
-    result := make([dynamic]u32)
-    for len(queue) > 0 {
-        node := queue[0]
-        remove_range(&queue, 0, 1)
-        append(&result, node)
+	result := make([dynamic]u32)
+	for len(queue) > 0 {
+		node := queue[0]
+		remove_range(&queue, 0, 1)
+		append(&result, node)
 
-        neighbours := get_neighbours(node, data)
-        for nb in neighbours {
-            in_degree[nb] -= 1
-            if in_degree[nb] == 0 do append(&queue, nb)
-        }
-        delete(neighbours)
-    }
+		neighbours := get_neighbours(node, data)
+		for nb in neighbours {
+			in_degree[nb] -= 1
+			if in_degree[nb] == 0 do append(&queue, nb)
+		}
+		delete(neighbours)
+	}
 
-    return result
+	return result
 }
 
-tarjan_sort :: proc(n: u32, get_neighbours: proc(node: u32, data: rawptr) -> [dynamic]u32, data: rawptr) -> [dynamic]u32 {
+tarjan_sort :: proc(
+	n: u32,
+	get_neighbours: proc(node: u32, data: rawptr) -> [dynamic]u32,
+	data: rawptr,
+) -> [dynamic]u32 {
 
-    marked := make([]bool, n)
-    defer delete(marked)
+	marked := make([]bool, n)
+	defer delete(marked)
 
-    stack: [dynamic]Frame
-    defer delete(stack)
-    
-    result: [dynamic]u32
+	stack: [dynamic]Frame
+	defer delete(stack)
 
-    for i in 0..<n {
-        if marked[i] do continue
-        marked[i] = true
-        append_elem(&stack, Frame{i, 0})
+	result: [dynamic]u32
 
-        for len(stack) > 0 {
-            frame := &stack[len(stack)-1]
-            found := false
-            neighbours := get_neighbours(frame.node, data)
+	for i in 0 ..< n {
+		if marked[i] do continue
+		marked[i] = true
+		append_elem(&stack, Frame{i, 0})
 
-            for frame.nb_idx < len(neighbours) {
-                nb := neighbours[frame.nb_idx]
-                frame.nb_idx += 1
-                if !marked[nb] {
-                    marked[nb] = true
-                    append_elem(&stack, Frame{nb, 0})
-                    found = true
-                    break
-                }
-            }
-            if !found {
-                append_elem(&result, frame.node)
-                pop(&stack)
-            }
+		for len(stack) > 0 {
+			frame := &stack[len(stack) - 1]
+			found := false
+			neighbours := get_neighbours(frame.node, data)
 
-            delete(neighbours)
-        }
-    }
+			for frame.nb_idx < len(neighbours) {
+				nb := neighbours[frame.nb_idx]
+				frame.nb_idx += 1
+				if !marked[nb] {
+					marked[nb] = true
+					append_elem(&stack, Frame{nb, 0})
+					found = true
+					break
+				}
+			}
+			if !found {
+				append_elem(&result, frame.node)
+				pop(&stack)
+			}
 
-    slice.reverse(result[:])
-    return result
+			delete(neighbours)
+		}
+	}
+
+	slice.reverse(result[:])
+	return result
 }
 
-bfs :: proc(start, n: u32, get_neighbours: proc(node: u32, data: rawptr) -> [dynamic]u32, data: rawptr) -> [dynamic]u32 {
-    visited := make([]bool, n)
-    defer delete(visited)
+bfs :: proc(
+	start, n: u32,
+	get_neighbours: proc(node: u32, data: rawptr) -> [dynamic]u32,
+	data: rawptr,
+) -> [dynamic]u32 {
+	visited := make([]bool, n)
+	defer delete(visited)
 
-    queue: [dynamic]u32
-    defer delete(queue)
-    
-    result: [dynamic]u32
+	queue: [dynamic]u32
+	defer delete(queue)
 
-    visited[start] = true
-    append_elem(&queue, start)
+	result: [dynamic]u32
 
-    for len(queue) > 0 {
-        node := queue[0]
-        ordered_remove(&queue, 0)
-        append_elem(&result, node)
+	visited[start] = true
+	append_elem(&queue, start)
 
-        neighbours := get_neighbours(node, data)
-        for nb in neighbours {
-            if !visited[nb] {
-                visited[nb] = true
-                append_elem(&queue, nb)
-            }
-        }
+	for len(queue) > 0 {
+		node := queue[0]
+		ordered_remove(&queue, 0)
+		append_elem(&result, node)
 
-        delete(neighbours)
-    }
+		neighbours := get_neighbours(node, data)
+		for nb in neighbours {
+			if !visited[nb] {
+				visited[nb] = true
+				append_elem(&queue, nb)
+			}
+		}
 
-    return result
+		delete(neighbours)
+	}
+
+	return result
 }
 
-dfs :: proc(start, n: u32, get_neighbours: proc(node: u32, data: rawptr) -> [dynamic]u32, data: rawptr) -> [dynamic]u32 {
-    visited := make([]bool, n)
-    defer delete(visited)
+dfs :: proc(
+	start, n: u32,
+	get_neighbours: proc(node: u32, data: rawptr) -> [dynamic]u32,
+	data: rawptr,
+) -> [dynamic]u32 {
+	visited := make([]bool, n)
+	defer delete(visited)
 
-    queue: [dynamic]u32
-    defer delete(queue)
-    
-    result: [dynamic]u32
+	queue: [dynamic]u32
+	defer delete(queue)
 
-    visited[start] = true
-    append_elem(&queue, start)
+	result: [dynamic]u32
 
-    for len(queue) > 0 {
-        node := queue[len(queue) - 1]
-        ordered_remove(&queue, len(queue) - 1)
-        append_elem(&result, node)
+	visited[start] = true
+	append_elem(&queue, start)
 
-        neighbours := get_neighbours(node, data)
-        #reverse for nb in neighbours {
-            if !visited[nb] {
-                visited[nb] = true
-                append_elem(&queue, nb)
-            }
-        }
+	for len(queue) > 0 {
+		node := queue[len(queue) - 1]
+		ordered_remove(&queue, len(queue) - 1)
+		append_elem(&result, node)
 
-        delete(neighbours)
-    }
+		neighbours := get_neighbours(node, data)
+		#reverse for nb in neighbours {
+			if !visited[nb] {
+				visited[nb] = true
+				append_elem(&queue, nb)
+			}
+		}
 
-    return result
+		delete(neighbours)
+	}
+
+	return result
 }
 
-matrix_print :: proc(n: u32, has_edge: proc(i, j, n: u32, data: rawptr) -> u8, data: rawptr) {
-    if n == 0 { return }
+matrix_print :: proc(n: u32, get_edge: proc(i, j, n: u32, data: rawptr) -> u8, data: rawptr) {
+	if n == 0 {return}
+	fmt.print("  | ")
 
-    spaces := "  | "
-    fmt.print(spaces, sep = "")
-    for i in 0..<n {
-	    fmt.print(i, " ", sep = "")
-    }
-    fmt.println()
+	//spaces := "  | "
+	//fmt.print(spaces, sep = "")
 
-    for i in 0..<n*2+4 {
-	    fmt.print("-" if i != 2 else "+")
-    }
-    fmt.println()
+	for i in 0 ..< n {
+		fmt.print(i, " ", sep = "")
+	}
+	fmt.println()
 
-    for i in 0..<n {
-	    fmt.print(i, "| ")
+	for i in 0 ..< n * 2 + 3 {
+		fmt.print("-" if i != 2 else "+")
+	}
+	fmt.println()
 
-	    for j in 0..<n {
-            fmt.print(has_edge(i, j, n, data), " ", sep = "")
-	    }
+	for i in 0 ..< n {
+		fmt.print(i, "| ")
 
-	    fmt.println()
-    }
+		for j in 0 ..< n {
+			fmt.print(get_edge(i, j, n, data), " ", sep = "")
+		}
+
+		fmt.println()
+	}
 }
 
 order_print :: proc(neighbours: [dynamic]u32) {
-    for nb in neighbours {
-        fmt.print(nb, " ", sep = "")
-    }
+	for nb in neighbours {
+		fmt.print(nb, " ", sep = "")
+	}
 
-    fmt.println()
+	fmt.println()
 }
